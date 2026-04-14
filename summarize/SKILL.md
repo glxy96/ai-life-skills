@@ -14,11 +14,11 @@ Universal content summarizer. Takes any input — YouTube video, web article, wh
 
 | Folder | Purpose |
 |---|---|
-| `08 Summaries/` | Where summary notes land |
-| `07 References/` | Concept / company / product / place notes |
-| `04 People/` | Person notes (creators, guests, mentioned people) |
-| `02 Daily/YYYY/MM/` | Daily notes, named `MM-DD-YY ddd.md` (e.g. `03-29-26 Sun.md`) |
-| `_Templates/` | Note templates — skill installs `new person template.md` here on first run |
+| `summaries/` | Where summary notes land |
+| `concepts/` | Concept / company / product / place notes |
+| `profiles/` | Person notes (creators, guests, mentioned people) |
+| `daily/YYYY/MM/` | Daily notes, named `DD.md` (e.g. `14.md`, in `$PKM_VAULT_ROOT`) |
+| `templates/` | Note templates — skill installs `new person template.md` here on first run |
 | `_Bases/` (optional) | Obsidian Bases — only needed if you use the Bases plugin |
 
 **CLI tools** — install these before first use, or let Step 0 walk you through it:
@@ -126,7 +126,7 @@ Otherwise, ask the user which version to install:
 > 1. **Minimal** (default, works in any vault)
 > 2. **Full** (requires Dataview plugin + Obsidian Bases)
 
-Then copy the chosen template into the user's `_Templates/` folder:
+Then copy the chosen template into the user's `templates/` folder:
 
 ```bash
 skill_dir="$(dirname "$0")"   # or wherever this SKILL.md lives
@@ -140,7 +140,7 @@ if [ ! -f "$target" ]; then
 fi
 ```
 
-Note: whichever version gets installed lands at `_Templates/new person template.md` (no `(minimal)` suffix) so the skill's later references work uniformly.
+Note: whichever version gets installed lands at `templates/new person template.md` (no `(minimal)` suffix) so the skill's later references work uniformly.
 
 Once Step 0 passes, proceed to Step 0.5.
 
@@ -254,7 +254,7 @@ for block in doc['blocks']:
 - The goal is that someone reading the summary should understand what each chapter argues, not just what the book is "about" at a high level
 
 **Output structure for books:**
-- Location: `08 Summaries/<Book Title>.md` (or `08 Summaries/<Author>/<Book Title>.md` if summarizing multiple books by one author)
+- Location: `summaries/<Book Title>.md` (or `summaries/<Author>/<Book Title>.md` if summarizing multiple books by one author)
 - Frontmatter tag: `book`
 - Extra fields: `creator` (author wikilink), `published` (year), `isbn` (if known), `source` (wikilink to the epub file if it's in the vault, e.g. `"[[Book Title.epub]]"`)
 - Each chapter gets its own `## Chapter N: Title` section in the summary
@@ -306,12 +306,12 @@ Based on content type, choose the appropriate format:
 
 | Content type | Location | Frontmatter tags | Extra fields |
 |---|---|---|---|
-| YouTube video | `08 Summaries/<Channel>/Summaries/<Title>.md` | `youtube` | `recording`, `views`, `creator`, `people`, `guest`, `hosts`, `guests`, `duration`, `uploaded`, `transcript` |
-| Article / blog | `08 Summaries/<Title>.md` | `article` | `creator`, `source` (URL), `published` |
-| Whitepaper / PDF | `08 Summaries/<Title>.md` | `paper` | `authors`, `affiliations`, `source` (wikilink to PDF if in vault, or URL), `published` |
-| EPUB / book | `08 Summaries/<Title>.md` | `book` | `creator` (author wikilink), `published` (year), `isbn`, `source` (wikilink to epub if in vault) |
-| Podcast episode | `08 Summaries/<Show>/Summaries/<Title>.md` | `podcast` | `recording`, `people`, `guest`, `hosts`, `guests`, `duration`, `transcript` |
-| Lecture / talk | `08 Summaries/<Title>.md` | `lecture` | `creator`, `recording` (if URL), `transcript` |
+| YouTube video | `summaries/<Channel>/Summaries/<Title>.md` | `youtube` | `recording`, `views`, `creator`, `people`, `guest`, `hosts`, `guests`, `duration`, `uploaded`, `transcript` |
+| Article / blog | `summaries/<Title>.md` | `article` | `creator`, `source` (URL), `published` |
+| Whitepaper / PDF | `summaries/<Title>.md` | `paper` | `authors`, `affiliations`, `source` (wikilink to PDF if in vault, or URL), `published` |
+| EPUB / book | `summaries/<Title>.md` | `book` | `creator` (author wikilink), `published` (year), `isbn`, `source` (wikilink to epub if in vault) |
+| Podcast episode | `summaries/<Show>/Summaries/<Title>.md` | `podcast` | `recording`, `people`, `guest`, `hosts`, `guests`, `duration`, `transcript` |
+| Lecture / talk | `summaries/<Title>.md` | `lecture` | `creator`, `recording` (if URL), `transcript` |
 
 **All notes** get: `created`, `updated`, `date`, `summary`, `categories: ["[[posts.base]]"]`, `unread: true`
 
@@ -425,7 +425,7 @@ done
 ### 5b. Create missing notes
 
 #### Technical concepts, companies, products, places
-Create in `07 References/<Term>.md`:
+Create in `concepts/<Term>.md`:
 
 - **Filename**: always English (e.g. `Frequency Response.md`, `Harman Target.md`)
 - **Body language**: always English — definitions and explanations must be written in English regardless of the source content language. If the source is Japanese, translate the concept description into English before writing it.
