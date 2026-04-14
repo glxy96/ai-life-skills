@@ -255,7 +255,7 @@ import torch, os
 
 pipeline = Pipeline.from_pretrained(
     "pyannote/speaker-diarization-3.1",
-    use_auth_token=os.environ["HF_TOKEN"]
+    token=os.environ["HF_TOKEN"]
 )
 device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
 pipeline.to(torch.device(device))  # GPU if available, CPU otherwise
@@ -311,7 +311,7 @@ Scribe handles both transcription AND diarization in one call — no pyannote ne
 ## Step 5: Create vault notes
 
 ### Transcript file
-- Location: `$MEETINGS_DIR/<MM-DD-YY Day Participant1 x Participant2> Transcript.md`
+- Location: `$MEETINGS_DIR/<YYYYMMDD Day Participant1 x Participant2> Transcript.md`
 - Content: the merged, speaker-labeled transcript with timestamps
 - Frontmatter:
   ```yaml
@@ -324,7 +324,7 @@ Scribe handles both transcription AND diarization in one call — no pyannote ne
   ```
 
 ### Call note
-- Location: `$MEETINGS_DIR/<MM-DD-YY Day Participant1 x Participant2>.md`
+- Location: `$MEETINGS_DIR/<YYYYMMDD Day Participant1 x Participant2>.md`
 - Frontmatter:
   ```yaml
   ---
