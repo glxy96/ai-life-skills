@@ -387,6 +387,8 @@ Scribe handles both transcription AND diarization in one call — no pyannote ne
 For every person, company, product, or concept wikilinked in the call note (that isn't already a note), create a reference or person note:
 - **People**: research public figures (birthday, career, links); private individuals get minimal notes based only on what was said
 - **Concepts / companies / products**: create in `$AI_VAULT_ROOT/$REFERENCES_DIR/` with a 2-4 sentence explanation
+  - **Filename**: always English (e.g. `Synthesizer V.md`, `Fixed Mindset.md`)
+  - **Body language**: always English — write definitions in English regardless of the recording language
 - For large numbers of notes (>10 missing), dispatch parallel subagents (highest available model) in batches of ~20
 
 After all notes are created, audit for dangling links. The regex excludes `|` (alias), `#` (heading ref), and `^` (block ref) so `[[Target|Alias]]`, `[[Page#Heading]]`, and `[[Page^block]]` all resolve to the canonical note name `Target` / `Page`:
@@ -414,3 +416,4 @@ Create person notes only for call participants (those in the `people` frontmatte
 8. **Auto-detect device** for pyannote (CUDA → MPS → CPU) so it works on any platform
 9. **Person note `## updates` links to the call note**, never the daily note
 10. **Write call note body in Japanese** — regardless of the recording language, the call note body (tldr, Key Topics, etc.) must be written in Japanese
+11. **Alias notation for wikilinks in Japanese call notes** — concept note filenames are always English (see Step 6). Use alias notation so wikilinks read naturally in Japanese: `[[English Concept Name|日本語のテキスト]]`. Use a plain `[[English Concept Name]]` only when the English term reads naturally in the surrounding Japanese text.
