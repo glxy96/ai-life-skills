@@ -14,17 +14,17 @@ Takes a call recording (video or audio), transcribes it with speaker labels, sum
 
 | Folder | Purpose |
 |---|---|
-| `03 Meetings/` | Where call notes and transcripts land |
-| `04 People/` | Person notes for participants |
-| `02 Daily/YYYY/MM/` | Daily notes, named `MM-DD-YY ddd.md` |
-| `_Templates/` | Note templates — skill installs `new person template.md` here on first run |
+| `meetings/` | Where call notes and transcripts land |
+| `profiles/` | Person notes for participants |
+| `daily/YYYY/MM/` | Daily notes, named `DD.md` (in `$PKM_VAULT_ROOT`) |
+| `templates/` | Note templates — skill installs `new person template.md` here on first run |
 
 **CLI tools** — install these before first use, or let Step 0 walk you through it:
 
 | Tool | Purpose | Install |
 |---|---|---|
 | `ffmpeg` | Extract audio from video files | macOS: `brew install ffmpeg` · Linux: `apt install ffmpeg` or `dnf install ffmpeg` · Windows: [ffmpeg.org/download.html](https://ffmpeg.org/download.html) |
-| `mlx_whisper` (local path) | Local transcription | `pip install mlx-whisper` |
+| `mlx_whisper` (local path) | Local transcription | alias to venv binary (see Step 1) |
 | `pyannote.audio` (local path) | Local speaker diarization | see Step 1 walkthrough |
 
 **Alternative to local**: set `ELEVENLABS_API_KEY` to use ElevenLabs Scribe for transcription + diarization in one call (paid, faster, no setup).
@@ -34,14 +34,16 @@ Takes a call recording (video or audio), transcribes it with speaker labels, sum
 The skill reads these variables at runtime. Override any of them via environment variables, or edit the defaults here:
 
 ```
-VAULT_ROOT       = $VAULT_ROOT        # auto-detected if not set (see Step 0a)
-MEETINGS_DIR     = 03 Meetings
-PEOPLE_DIR       = 04 People
-DAILY_DIR        = 02 Daily
-TEMPLATES_DIR    = _Templates
+AI_VAULT_ROOT    = $AI_VAULT_ROOT     # auto-detected if not set (see Step 0a)
+PKM_VAULT_ROOT   = $PKM_VAULT_ROOT    # for daily notes; defaults to AI_VAULT_ROOT if not set
+MEETINGS_DIR     = meetings
+PEOPLE_DIR       = profiles
+DAILY_DIR        = daily
+TEMPLATES_DIR    = templates
+REFERENCES_DIR   = concepts
 ```
 
-All paths below are relative to `$VAULT_ROOT`.
+All paths below are relative to `$AI_VAULT_ROOT` unless noted otherwise.
 
 ## Trigger
 
@@ -62,8 +64,8 @@ Before doing any work, verify the environment is ready. **Skip any check that al
 
 ```bash
 vault=""
-if [ -n "$VAULT_ROOT" ]; then
-  vault="$VAULT_ROOT"
+if [ -n "$AI_VAULT_ROOT" ]; then
+  vault="$AI_VAULT_ROOT"
 else
   dir="$PWD"
   while [ "$dir" != "/" ]; do
@@ -72,6 +74,10 @@ else
   done
 fi
 echo "Vault: ${vault:-NOT FOUND}"
+
+# PKM_VAULT_ROOT defaults to AI_VAULT_ROOT if not set separately
+pkm_root="${PKM_VAULT_ROOT:-$vault}"
+echo "PKM (daily notes): ${pkm_root:-NOT FOUND}"
 ```
 
 If no vault is found, ask the user:
@@ -79,17 +85,18 @@ If no vault is found, ask the user:
 > **What's the absolute path to your Obsidian vault?**
 > Recommended: use a **new, dedicated Obsidian vault** for this skill — not your existing personal vault. The skill creates and modifies many notes and folders, and a clean vault avoids polluting your existing notes. If you don't have one yet, create an empty folder, open it in Obsidian (File → Open vault as folder), and paste that path here.
 
-After they answer, validate that `<answer>/.obsidian/` exists before using it — if not, warn that the path doesn't look like an Obsidian vault (they may need to open it in Obsidian first) and ask them to confirm or re-enter. Use the validated answer as `$VAULT_ROOT` for the session (and suggest they set it permanently in their shell profile).
+After they answer, validate that `<answer>/.obsidian/` exists before using it — if not, warn that the path doesn't look like an Obsidian vault (they may need to open it in Obsidian first) and ask them to confirm or re-enter. Use the validated answer as `$AI_VAULT_ROOT` for the session (and suggest they set it permanently in their shell profile). If `$PKM_VAULT_ROOT` is not set, it defaults to `$AI_VAULT_ROOT`.
 
 ### 0b. Check required folders
 
 ```bash
-for d in "$MEETINGS_DIR" "$PEOPLE_DIR" "$DAILY_DIR" "$TEMPLATES_DIR"; do
-  [ -d "$VAULT_ROOT/$d" ] || echo "MISSING: $d"
+for d in "$MEETINGS_DIR" "$PEOPLE_DIR" "$TEMPLATES_DIR"; do
+  [ -d "$AI_VAULT_ROOT/$d" ] || echo "MISSING: $d"
 done
+[ -d "$pkm_root/$DAILY_DIR" ] || echo "MISSING (PKM): $DAILY_DIR"
 ```
 
-For each missing folder, ask the user: **"Create `<folder>` in your vault? [y/N]"** — if yes, `mkdir -p "$VAULT_ROOT/<folder>"`.
+For each missing folder, ask the user: **"Create `<folder>` in your vault? [y/N]"** — if yes, `mkdir -p "$AI_VAULT_ROOT/<folder>"` (or `$PKM_VAULT_ROOT` for `$DAILY_DIR`).
 
 ### 0c. Check required CLI tools
 
@@ -105,13 +112,13 @@ If ffmpeg is missing, ask the user before installing. Install command depends on
 
 ### 0d. Install the person template if missing
 
-If `$VAULT_ROOT/$TEMPLATES_DIR/new person template.md` does not exist, ask the user which version to install:
+If `$AI_VAULT_ROOT/$TEMPLATES_DIR/new person template.md` does not exist, ask the user which version to install:
 
 > **Install person template — which version?**
 > 1. **Minimal** (default, works in any vault)
 > 2. **Full** (requires Dataview plugin + Obsidian Bases)
 
-Copy the chosen template from the repo's shared `templates/` directory (sibling of this skill dir, i.e. `../templates/`) into `$VAULT_ROOT/$TEMPLATES_DIR/new person template.md`. If the file already exists, leave it alone — the user may have customized it.
+Copy the chosen template from the repo's shared `templates/` directory (sibling of this skill dir, i.e. `../templates/`) into `$AI_VAULT_ROOT/$TEMPLATES_DIR/new person template.md`. If the file already exists, leave it alone — the user may have customized it.
 
 Once Step 0 passes, proceed to Step 0.5.
 
@@ -148,7 +155,15 @@ If the user picks local, verify each component and walk them through any missing
 ```bash
 command -v mlx_whisper >/dev/null 2>&1 || echo "MISSING: mlx_whisper"
 ```
-If missing, ask before installing: `pip install mlx-whisper`
+If missing, tell the user:
+> `mlx_whisper` is not on your PATH. The recommended setup is to install it in its own venv and expose it via a shell alias. Example:
+> ```bash
+> python3 -m venv ~/repos/mlx-whisper/.venv
+> ~/repos/mlx-whisper/.venv/bin/pip install mlx-whisper
+> # Then add to your ~/.zshrc (or dotfiles equivalent):
+> alias mlx_whisper='~/repos/mlx-whisper/.venv/bin/mlx_whisper'
+> ```
+> After adding the alias, run `source ~/.zshrc` and re-check.
 
 **2. pyannote.audio environment**
 
@@ -158,13 +173,13 @@ PYANNOTE_ENV="${XDG_DATA_HOME:-$HOME/.local/share}/summarize-call/pyannote-env"
 [ -d "$PYANNOTE_ENV" ] || echo "MISSING: pyannote venv"
 ```
 
-If missing, walk through setup:
+If missing, walk through setup (requires Python 3.11 via pyenv):
 ```bash
 mkdir -p "$(dirname "$PYANNOTE_ENV")"
-# Create venv with uv (or python3 -m venv if uv not installed)
-uv venv "$PYANNOTE_ENV"
-source "$PYANNOTE_ENV/bin/activate"
-uv pip install pyannote.audio torch torchaudio
+# Use Python 3.11 from pyenv (install if needed: pyenv install 3.11)
+PYTHON311="$(pyenv root)/versions/$(pyenv versions --bare | grep '^3\.11' | tail -1)/bin/python3"
+"$PYTHON311" -m venv "$PYANNOTE_ENV"
+"$PYANNOTE_ENV/bin/pip" install pyannote.audio torch torchaudio
 ```
 
 **3. HuggingFace token**
@@ -181,8 +196,15 @@ If missing, tell the user:
 >    - https://huggingface.co/pyannote/speaker-diarization-3.1
 >    - https://huggingface.co/pyannote/segmentation-3.0
 >    - https://huggingface.co/pyannote/speaker-diarization-community-1
-> 3. Export for this session: `export HF_TOKEN="hf_..."`
-> 4. To persist, add that line to your `~/.zshrc` (or `~/.bashrc`)
+> 3. Store the token securely in macOS Keychain:
+>    ```bash
+>    security add-generic-password -a "$USER" -s "HF_TOKEN" -w "hf_..."
+>    ```
+> 4. Add to your `~/.zshrc` (or dotfiles equivalent) to load it at shell startup:
+>    ```bash
+>    export HF_TOKEN=$(security find-generic-password -a "$USER" -s "HF_TOKEN" -w 2>/dev/null)
+>    ```
+> 5. Run `source ~/.zshrc` for this session, then re-check.
 
 Wait for the user to confirm before continuing.
 
@@ -345,16 +367,17 @@ Scribe handles both transcription AND diarization in one call — no pyannote ne
 - **Wikilink everything** — people, companies, products, concepts, places
 
 ### Person notes
-- For each participant: create at `$PEOPLE_DIR/<Full Name>.md` using the template at `$VAULT_ROOT/$TEMPLATES_DIR/new person template.md`
+- For each participant: create at `$PEOPLE_DIR/<Full Name>.md` using the template at `$AI_VAULT_ROOT/$TEMPLATES_DIR/new person template.md`
 - Extract ALL biographical details mentioned in the call (location, career, family, background)
 - For mid-call name-drops: behavior depends on depth mode (see Step 6)
 
 ### Daily note
-- Update `$VAULT_ROOT/$DAILY_DIR/YYYY/MM/MM-DD-YY ddd.md` (create `YYYY/MM/` if missing)
-- No `# Title` heading — filename is the title
-- Set `unread: true` in frontmatter
-- Add under a `## calls/meetings` section:
+- Append to `$PKM_VAULT_ROOT/$DAILY_DIR/YYYY/MM/DD.md` (e.g. `daily/2025/10/12.md`). Create `YYYY/MM/` if missing.
+- If the file doesn't exist, create it with `unread: true` frontmatter.
+- Add under a `### Inputs` section (create it if missing):
   ```markdown
+  ### Inputs
+
   - [[<Call Note Title>]] — brief description
   ```
 
@@ -363,14 +386,14 @@ Scribe handles both transcription AND diarization in one call — no pyannote ne
 ### Detailed mode
 For every person, company, product, or concept wikilinked in the call note (that isn't already a note), create a reference or person note:
 - **People**: research public figures (birthday, career, links); private individuals get minimal notes based only on what was said
-- **Concepts / companies / products**: create in `07 References/` (or `$REFERENCES_DIR` if you have the `/summarize` skill installed) with a 2-4 sentence explanation
+- **Concepts / companies / products**: create in `$AI_VAULT_ROOT/$REFERENCES_DIR/` with a 2-4 sentence explanation
 - For large numbers of notes (>10 missing), dispatch parallel subagents (highest available model) in batches of ~20
 
 After all notes are created, audit for dangling links. The regex excludes `|` (alias), `#` (heading ref), and `^` (block ref) so `[[Target|Alias]]`, `[[Page#Heading]]`, and `[[Page^block]]` all resolve to the canonical note name `Target` / `Page`:
 ```bash
 grep -oE '\[\[[^]|#^]+' "<call_note_path>" | sed 's/\[\[//' | sort -u
 for term in <each>; do
-  found=$(find "$VAULT_ROOT" -name "$term.md" -not -path "*/.Trash/*" 2>/dev/null | head -1)
+  found=$(find "$AI_VAULT_ROOT" -name "$term.md" -not -path "*/.Trash/*" 2>/dev/null | head -1)
   [ -z "$found" ] && echo "MISSING: $term"
 done
 ```
@@ -390,3 +413,4 @@ Create person notes only for call participants (those in the `people` frontmatte
 7. **Always `--condition-on-previous-text False`** on mlx_whisper to prevent hallucination loops
 8. **Auto-detect device** for pyannote (CUDA → MPS → CPU) so it works on any platform
 9. **Person note `## updates` links to the call note**, never the daily note
+10. **Write call note body in Japanese** — regardless of the recording language, the call note body (tldr, Key Topics, etc.) must be written in Japanese
