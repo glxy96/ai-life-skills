@@ -295,20 +295,111 @@ unread: true
 
 This step happens immediately after text extraction (Step 1) and before output structure planning (Step 2). The transcript is the raw source material — always preserve it.
 
+## Step 1c: Archive audio to the vault + enable click-to-play timestamps (audio/video content only)
+
+If the user has the **[Media Extended](https://github.com/aidenlx/media-extended)** Obsidian plugin installed (assume YES unless proven otherwise — it's a common companion plugin for this workflow), move the downloaded source audio into the vault and wire up click-to-play timestamps throughout the summary.
+
+### 1c-i. Archive the audio
+
+Copy (or move) the downloaded mp3/wav/mp4 into `$VAULT_ROOT/_Attachments/` with a descriptive, human-scannable filename that includes the date and — if cropped — the segment range.
+
+```
+<Creator> x <Guest> <YYYY-MM-DD>.mp3
+<Creator> x <Guest> <YYYY-MM-DD> (HhMMm-HhMMm).mp3   # if cropped
+```
+
+**Add `audio: "[[<filename>.mp3]]"`** to the summary note's frontmatter so the attachment is a first-class property on the note (parallel to `transcript:`, `source:`, etc.).
+
+### 1c-ii. Embed ONE pinned player at the top
+
+Place a single full-length audio/video embed at the top of the summary, just above the `> [!tldr]` callout:
+
+```markdown
+> [!abstract] Audio — full interview (cropped H:MM:SS – H:MM:SS of the VOD)
+> ![[<filename>.mp3]]
+```
+
+**Do not scatter multiple `![[audio.mp3#t=...]]` embeds through the note** — every embed spawns a fresh player. Media Extended's pattern is one pinned player + many text-link jump-points.
+
+**Do NOT add:**
+- A "Pin this player / Media Extended: right-click → Pin" instruction underneath the embed. The user knows how their plugin works. Don't narrate it.
+- A "Key moments" / "Jump to" / "Chapters" callout listing timestamped highlights. The per-quote inline jumps (Step 1c-iii) already give every notable moment a click-to-play entry point; a separate highlights list is redundant and repeats the same timestamps twice.
+
+### 1c-iii. Add inline click-to-play links next to every quote
+
+For every `> [!quote]` callout that embeds a transcript line (`![[...Transcript#^block-id]]`), add a sibling line inside the same callout:
+
+```markdown
+> [!quote] Who — what they said
+> ![[<Transcript Note>#^block-id]]
+> ▶ [[<filename>.mp3#t=<seconds>|jump player to H:MM:SS]]
+```
+
+- The `#t=<seconds>` fragment is **audio-local seconds**, not wall-clock VOD time. If the audio was cropped (e.g. starting at VOD 1:17:00), subtract the crop offset from the VOD timestamp before emitting.
+- The `|jump player to H:MM:SS` alias is what the user reads — format it `H:MM:SS` when ≥1 hour, else `M:SS`.
+- The leading `▶ ` (U+25B6) is a visual cue — keep it.
+- These are **text links** (no `!` prefix), not embeds. Media Extended routes the click to the pinned player instead of creating a new one.
+
+### 1c-iv. Math for audio-local offsets
+
+```
+audio_sec = (vod_h * 3600 + vod_m * 60 + vod_s) - crop_start_sec
+```
+
+If the transcript already uses block IDs of the form `^p1-H-MM-SS` (absolute VOD timestamps), this regex transformation converts every quote-embed into one with an audio-local jump link appended:
+
+```python
+import re
+AUDIO = "<filename>.mp3"
+CROP_OFFSET_SEC = <crop start seconds>   # 0 if audio starts at beginning of the source
+
+pattern = re.compile(
+    r'^(> !\[\[[^\]]*Transcript#\^p1-(\d+)-(\d+)-(\d+)(?:-\d+)?\]\])$',
+    re.MULTILINE,
+)
+
+def repl(m):
+    block_line = m.group(1)
+    h, mm, ss = int(m.group(2)), int(m.group(3)), int(m.group(4))
+    audio_sec = (h*3600 + mm*60 + ss) - CROP_OFFSET_SEC
+    if audio_sec < 0:
+        return block_line
+    hh = audio_sec // 3600
+    mm2 = (audio_sec % 3600) // 60
+    ss2 = audio_sec % 60
+    label = f"{hh}:{mm2:02d}:{ss2:02d}" if hh else f"{mm2}:{ss2:02d}"
+    return f"{block_line}\n> ▶ [[{AUDIO}#t={audio_sec}|jump player to {label}]]"
+
+text = pattern.sub(repl, text)
+```
+
+Run this after Step 4 assembles the summary — it's a pure string transform.
+
+### 1c-v. If the user does NOT have Media Extended
+
+Fall back to native Obsidian syntax: one top-of-note `![[audio.mp3]]` embed only. Do **not** scatter `![[audio.mp3#t=N]]` embeds inline — they each spawn a separate player, which clutters the note. Inline timestamp references in that case should just be the VOD timestamp as plain text.
+
 ## Step 2: Determine output structure
 
 Based on content type, choose the appropriate format:
 
 | Content type | Location | Frontmatter tags | Extra fields |
 |---|---|---|---|
-| YouTube video | `08 Summaries/<Channel>/Summaries/<Title>.md` | `youtube` | `recording`, `views`, `creator`, `people`, `guest`, `hosts`, `guests`, `duration`, `uploaded`, `transcript` |
+| YouTube video | `08 Summaries/<Channel>/Summaries/<Title>.md` | `youtube` | `recording`, `audio` (wikilink to vault mp3 if archived per Step 1c), `views`, `creator`, `people`, `guest`, `hosts`, `guests`, `duration`, `uploaded`, `transcript` |
 | Article / blog | `08 Summaries/<Title>.md` | `article` | `creator`, `source` (URL), `published` |
 | Whitepaper / PDF | `08 Summaries/<Title>.md` | `paper` | `authors`, `affiliations`, `source` (wikilink to PDF if in vault, or URL), `published` |
 | EPUB / book | `08 Summaries/<Title>.md` | `book` | `creator` (author wikilink), `published` (year), `isbn`, `source` (wikilink to epub if in vault) |
-| Podcast episode | `08 Summaries/<Show>/Summaries/<Title>.md` | `podcast` | `recording`, `people`, `guest`, `hosts`, `guests`, `duration`, `transcript` |
-| Lecture / talk | `08 Summaries/<Title>.md` | `lecture` | `creator`, `recording` (if URL), `transcript` |
+| Podcast episode | `08 Summaries/<Show>/Summaries/<Title>.md` | `podcast` | `recording`, `audio` (wikilink to vault mp3 if archived per Step 1c), `segment` (e.g. `"1:17:00 – 2:50:50"` if cropped), `people`, `guest`, `hosts`, `guests`, `duration`, `transcript` |
+| Lecture / talk | `08 Summaries/<Title>.md` | `lecture` | `creator`, `recording` (if URL), `audio` (wikilink to vault mp3 if archived per Step 1c), `transcript` |
 
 **All notes** get: `created`, `updated`, `date`, `summary`, `categories: ["[[posts.base]]"]`, `unread: true`
+
+**`summary` field length — HARD LIMIT: ≤70 characters.** One tight line, no wikilinks, no paragraph-length blurbs. The `> [!tldr]` callout at the top of the body is where the long-form overview lives. The frontmatter `summary` is just a scannable hint for base views — think newspaper subhead, not abstract. Examples that are the right size:
+- `"Ledger interviews Cobie — 3h 51m UpOnly career retrospective"` (60 chars)
+- `"Cobie on ThreadGuy — first interview since joining Coinbase"` (59 chars)
+- `"Lex x Karpathy — state of AI, RLHF, self-driving, education"` (60 chars)
+
+If it's longer than 70 characters, cut it. Do not paste the tldr into the summary field.
 
 If a channel/show folder is needed, check if it already exists before creating.
 
@@ -380,9 +471,11 @@ Summary length must be **proportional** to the source material. A 10-minute vide
 3. **`> [!tldr]`** for the overview, not `## Summary`
 4. **`> [!quote]`** callouts for notable quotes (with speaker wikilink and source location if available)
 5. **Wikilink EVERYTHING** — people, places, companies, concepts, technical terms, **book/film/show titles**, even if no note exists yet
+5b. **Never create two separate wikilinks for the same entity.** If a person has a canonical note name plus other handles / real names / pseudonyms, use alias syntax — `[[Cobie|Jordan Fish]]`, `[[Bob Laksiv|King BTC]]` — not two siblings like `[[Cobie]] / [[Jordan Fish]]` or `[[Bob Laksiv]] / [[King BTC]]`. The canonical note is whichever name already exists (or will exist) in `04 People/`; everything else is a display alias pointing at it. Same for companies/products with renames — `[[Facebook|Meta]]`, `[[X|Twitter]]`. When it's natural to mention both, write it as prose: `[[Cobie]] (real name Jordan Fish)`, `[[Bob Laksiv]] (a.k.a. King BTC)`. Rule of thumb: one entity = one link target, always.
 6. **Use actual Japanese/Chinese characters** for non-English words, not romanization
 7. **Timestamps** on topic headings and quotes when available (YouTube, podcasts)
 8. **`people` field**: only people who created/appeared in the content. Mentioned people go in `## People Mentioned`
+9. **Audio click-to-play** — if Step 1c archived a local mp3 and Media Extended is installed, every `> [!quote]` callout that embeds a transcript block should also carry a `> ▶ [[<audio>.mp3#t=<sec>|jump player to H:MM:SS]]` text link (one pinned top-of-note player, many text-link jumps). See Step 1c for the full pattern and the regex transform.
 
 ### Audience adaptation
 
@@ -511,3 +604,4 @@ Update `$VAULT_ROOT/$DAILY_DIR/YYYY/MM/MM-DD-YY ddd.md` (e.g. `02 Daily/2026/04/
 8. **Always embed/link the source** — PDF embed, vid embed, or source URL in frontmatter
 9. **`> [!tldr]`** is mandatory — every summary starts with a concise overview callout
 10. **Person note `## updates` links to the content note, NEVER the daily note**
+11. **Audio archival + click-to-play** — for downloaded audio/video, archive the file to `_Attachments/`, embed ONE pinned player at the top, and add `▶ [[audio.mp3#t=<sec>|jump player to H:MM:SS]]` text links inside every quote callout. Never scatter multiple `![[audio.mp3#t=N]]` embeds (they each spawn a separate player). See Step 1c.
