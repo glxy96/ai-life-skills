@@ -9,11 +9,18 @@ A collection of skills I use with Claude Code to improve my life in various ways
 
 (more coming) (daily brief, daily news)
 
+## Optional Obsidian plugins
+
+Two Obsidian plugins that pair well with the skills — see [`obsidian-plugins/`](./obsidian-plugins) for details:
+
+- **unread-dot** (vendored in this repo) — blue dot next to notes with `unread: true` in frontmatter. The summarize skills set this flag on every new note, so this plugin gives you a visual "you have new stuff" indicator in the file explorer.
+- **flashcards-obsidian** (vendored in this repo) — turn `==highlighted==` text, `Question::Answer` syntax, or `#card` tags into Anki cards. Fork of [reuseman/flashcards-obsidian](https://github.com/reuseman/flashcards-obsidian). Requires Anki + AnkiConnect.
+
 ## Install — easy mode
 
 Open Claude Code in any directory and paste this:
 
-> Install the ai-life-skills pack from https://github.com/reysu/ai-life-skills. Clone the repo to `~/src/ai-life-skills`, ask me where I want the new Obsidian vault to live, create the vault folder with the full folder structure the skills expect, and symlink every skill in the repo into `~/.claude/skills/`.
+> Install the ai-life-skills pack from https://github.com/reysu/ai-life-skills. Clone the repo to `~/src/ai-life-skills`, ask me where I want the new Obsidian vault to live, create the vault folder with the full folder structure the skills expect, symlink every skill in the repo into `~/.claude/skills/`, and ask me whether to also install the bundled `unread-dot` Obsidian plugin into the vault's `.obsidian/plugins/` folder.
 
 Claude will:
 1. Clone the repo
