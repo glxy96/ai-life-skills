@@ -7,7 +7,7 @@ A collection of skills I use with Claude Code to improve my life in various ways
 - [`summarize/`](./summarize) — drop in a YouTube video, article, PDF, EPUB, or podcast and it writes a summary note into your vault with wikilinks to every person and concept mentioned. Asks detailed vs minimal mode on each run — detailed creates reference notes for every wikilink, minimal leaves them dangling and saves ~85% tokens.
 - [`summarize-call/`](./summarize-call) — drop in a call recording (video or audio) and it transcribes with speaker labels, summarizes, and writes a call note + transcript + person notes for the participants. Same detailed / minimal mode as `summarize`.
 
-## Template-driven daily updates
+## Daily Briefs 
 
 Two prompt-callout templates land in your vault under `01 Updates/` after install:
 
@@ -20,12 +20,13 @@ To run an update, paste either of these into Claude Code:
 
 ```
 update my daily brief — read the prompt callout in "01 Updates/📌 Daily Brief.md" and follow it
+
 update my daily news — read the prompt callout in "01 Updates/📰 Daily News.md" and follow it
 ```
 
 For an automatic daily run, set up a recurring task:
 - **`/loop`** — runs locally on your machine (machine has to be on at the scheduled time)
-- **`/schedule`** — runs in the cloud (works while your machine is off, costs API credits)
+- **`/schedule`** — runs in the cloud (works while your machine is off on their servers)
 
 ## Optional Obsidian plugins
 
@@ -38,7 +39,9 @@ Two Obsidian plugins that pair well with the skills — see [`obsidian-plugins/`
 
 Open Claude Code in any directory and paste this:
 
-> Install the ai-life-skills pack from https://github.com/reysu/ai-life-skills. Clone the repo to `~/src/ai-life-skills`, ask me where I want the new Obsidian vault to live, create the vault folder with the full folder structure the skills expect, symlink every skill in the repo into `~/.claude/skills/`, copy `vault/CLAUDE.md` from the repo to the new vault's root, copy the daily-brief and daily-news prompt-callout templates from `vault/01 Updates/` into the vault's `01 Updates/` folder, and ask me whether to also install the bundled `unread-dot` Obsidian plugin into the vault's `.obsidian/plugins/` folder.
+```
+Install the ai-life-skills pack from https://github.com/reysu/ai-life-skills. Clone the repo to ~/src/ai-life-skills, ask me where I want the new Obsidian vault to live, create the vault folder with the full folder structure the skills expect, symlink every skill in the repo into ~/.claude/skills/, copy vault/CLAUDE.md from the repo to the new vault's root, copy the daily-brief and daily-news prompt-callout templates from vault/01 Updates/ into the vault's 01 Updates/ folder, and ask me whether to also install the bundled unread-dot Obsidian plugin into the vault's .obsidian/plugins/ folder.
+```
 
 Claude will:
 1. Clone the repo
