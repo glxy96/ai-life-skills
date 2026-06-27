@@ -16,7 +16,7 @@ Takes a call recording (video or audio), transcribes it with speaker labels, sum
 |---|---|
 | `meetings/` | Where call notes and transcripts land |
 | `profiles/` | Person notes for participants |
-| `daily/YYYY/MM/` | Daily notes, named `DD.md` (in `$PKM_VAULT_ROOT`) |
+| `daily/` | Daily notes, named `YYYY-MM-DD.md` (e.g. `2026-05-22.md`, in `$PKM_VAULT_ROOT`) |
 | `templates/` | Note templates — skill installs `new person template.md` here on first run |
 
 **CLI tools** — install these before first use, or let Step 0 walk you through it:
@@ -372,7 +372,7 @@ Scribe handles both transcription AND diarization in one call — no pyannote ne
 - For mid-call name-drops: behavior depends on depth mode (see Step 6)
 
 ### Daily note
-- Append to `$PKM_VAULT_ROOT/$DAILY_DIR/YYYY/MM/DD.md` (e.g. `daily/2025/10/12.md`). Create `YYYY/MM/` if missing.
+- Append to `$PKM_VAULT_ROOT/$DAILY_DIR/YYYY-MM-DD.md` (e.g. `daily/2026-05-22.md`).
 - If the file doesn't exist, create it with `unread: true` frontmatter.
 - Add under a `### Inputs` section (create it if missing):
   ```markdown

@@ -17,7 +17,7 @@ Universal content summarizer. Takes any input — YouTube video, web article, wh
 | `summaries/` | Where summary notes land |
 | `concepts/` | Concept / company / product / place notes |
 | `profiles/` | Person notes (creators, guests, mentioned people) |
-| `daily/YYYY/MM/` | Daily notes, named `DD.md` (e.g. `14.md`, in `$PKM_VAULT_ROOT`) |
+| `daily/` | Daily notes, named `YYYY-MM-DD.md` (e.g. `2026-05-22.md`, in `$PKM_VAULT_ROOT`) |
 | `templates/` | Note templates — skill installs `new person template.md` here on first run |
 | `_Bases/` (optional) | Obsidian Bases — only needed if you use the Bases plugin |
 
