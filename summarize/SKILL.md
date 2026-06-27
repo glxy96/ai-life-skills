@@ -103,13 +103,31 @@ For each missing folder, ask the user: **"Create `<folder>` in your vault? [y/N]
 
 ### 0c. Check required CLI tools
 
+**CRITICAL — Context-aware installation only.** The tool checks below identify what is MISSING on this system. Do NOT install every missing tool. Only install the tools required for the specific content type being summarized.
+
+| Content type | Required tool | Install |
+|---|---|---|
+| YouTube video | `yt-dlp` | `brew install yt-dlp` or `pip install yt-dlp` |
+| Web article / blog post | `defuddle` | `npm install -g defuddle` |
+| PDF | `pdftotext` | `brew install poppler` |
+| EPUB / book | `pandoc` | `brew install pandoc` |
+
 ```bash
 for tool in yt-dlp defuddle pdftotext pandoc; do
   command -v "$tool" >/dev/null 2>&1 || echo "MISSING: $tool"
 done
 ```
 
-For each missing tool, tell the user what's missing and **ask before installing** — installs touch the user's system. Use the install commands from the Requirements table above. If the user declines, note which tools are missing and warn that the corresponding content types (YouTube, web articles, PDFs, EPUBs) will fail until installed.
+**PITFALL — Blind installation.** If the user is summarizing a YouTube video, only `yt-dlp` is required. Do NOT install `defuddle`, `pdftotext`, or `pandoc` just because they are listed as missing. Report what is missing and proceed — the task will succeed with only the tools it needs.
+
+**PITFALL — Never auto-install tools without user permission.** If a required tool is missing, tell the user what is needed and ask before installing. Installations touch the user's system and require explicit consent.
+
+For each missing tool that is actually required for this content type, ask the user before installing. If the user declines, note which tools are missing and warn that the corresponding content types (YouTube, web articles, PDFs, EPUBs) will fail until installed.
+
+**YouTube VTT extraction notes:**
+- **PITFALL — YouTube VTT 2-text-line structure:** Each VTT cue block contains TWO text lines — the first includes `<c>` annotation tags, the second is clean text. Extract ONLY the second text line from each block to avoid duplication.
+- **PITFALL — YouTube VTT repetition:** YouTube VTT repeats the same text across multiple cue blocks. Deduplicate consecutive repeated sentences (split on `.`, `!`, `?` followed by space; keep only first occurrence of each normalized sentence).
+- **Do NOT use JSON3 format** — it uses deeply nested `events[].segs[].utf8` that has returned empty results in practice. VTT is simpler and more reliable.
 
 ### 0d. Install the person template if missing
 
@@ -315,6 +333,13 @@ Based on content type, choose the appropriate format:
 
 **All notes** get: `created`, `updated`, `date`, `summary`, `categories: ["[[posts.base]]"]`, `unread: true`
 
+**`summary` field length — HARD LIMIT: ≤70 characters.** One tight line, no wikilinks, no paragraph-length blurbs. The `> [!tldr]` callout at the top of the body is where the long-form overview lives. The frontmatter `summary` is just a scannable hint for base views — think newspaper subhead, not abstract. Examples that are the right size:
+- `"Ledger interviews Cobie — 3h 51m UpOnly career retrospective"` (60 chars)
+- `"Cobie on ThreadGuy — first interview since joining Coinbase"` (59 chars)
+- `"Lex x Karpathy — state of AI, RLHF, self-driving, education"` (60 chars)
+
+If it's longer than 70 characters, cut it. Do not paste the tldr into the summary field.
+
 If a channel/show folder is needed, check if it already exists before creating.
 
 ## Step 3: Analyze structure, determine depth, and plan sections
@@ -385,6 +410,7 @@ Summary length must be **proportional** to the source material. A 10-minute vide
 3. **`> [!tldr]`** for the overview, not `## Summary`
 4. **`> [!quote]`** callouts for notable quotes (with speaker wikilink and source location if available)
 5. **Wikilink EVERYTHING** — people, places, companies, concepts, technical terms, **book/film/show titles**, even if no note exists yet
+5b. **Never create two separate wikilinks for the same entity.** If a person has a canonical note name plus other handles / real names / pseudonyms, use alias syntax — `[[Cobie|Jordan Fish]]`, `[[Bob Laksiv|King BTC]]` — not two siblings like `[[Cobie]] / [[Jordan Fish]]` or `[[Bob Laksiv]] / [[King BTC]]`. The canonical note is whichever name already exists (or will exist) in `$PEOPLE_DIR`; everything else is a display alias pointing at it. Same for companies/products with renames — `[[Facebook|Meta]]`, `[[X|Twitter]]`. When it's natural to mention both, write it as prose: `[[Cobie]] (real name Jordan Fish)`, `[[Bob Laksiv]] (a.k.a. King BTC)`. Rule of thumb: one entity = one link target, always.
 6. **Use actual Japanese/Chinese characters** for non-English words, not romanization
 7. **Timestamps** on topic headings and quotes when available (YouTube, podcasts)
 8. **`people` field**: only people who created/appeared in the content. Mentioned people go in `## People Mentioned`

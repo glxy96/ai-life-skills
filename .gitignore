@@ -7,3 +7,7 @@
 # Editors
 .vscode/
 .idea/
+
+# Upstream files not needed in this fork
+obsidian-plugins/
+vault/
