@@ -490,7 +490,7 @@ Named view YAML block to append under the `views:` list:
 
 ## Step 7: Update daily note
 
-Append to `$PKM_VAULT_ROOT/$DAILY_DIR/YYYY/MM/DD.md` (e.g. `daily/2026/04/14.md`). If the file doesn't exist, create it with `unread: true` frontmatter. Add the entry under the `### Inputs` section if it exists; otherwise append at the end.
+Append to `$PKM_VAULT_ROOT/$DAILY_DIR/YYYY-MM-DD.md` (e.g. `daily/2026-05-22.md`). If the file doesn't exist, create it with `unread: true` frontmatter. Add the entry under the `### Inputs` section if it exists; otherwise append at the end.
 
 ```markdown
 ### Inputs
